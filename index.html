@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Meine Fußballkarriere – Spielversion</title>
+<style>
+:root{--bg:#07101d;--p:#101c2d;--p2:#17263d;--line:#2b4565;--a:#36a0ff;--g:#22c98a;--y:#f2b84b;--r:#e15b68;--t:#eef5ff;--m:#9db1cb}
+*{box-sizing:border-box}body{margin:0;background:linear-gradient(135deg,#07101d,#0c1930);color:var(--t);font:15px system-ui,-apple-system,Segoe UI,sans-serif}.wrap{max-width:1150px;margin:auto;padding:18px}.top{display:flex;justify-content:space-between;align-items:center;gap:12px}.brand{display:flex;gap:12px;align-items:center}.ball{font-size:34px;background:#172b47;padding:10px;border-radius:16px}h1{margin:0;font-size:22px}h2{margin:0 0 8px}h3{margin:0 0 6px}.muted{color:var(--m);font-size:13px}.stats{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin:14px 0}.stat,.panel,.choice,.news{background:var(--p);border:1px solid var(--line);border-radius:15px}.stat{padding:11px}.stat b{display:block;font-size:18px;margin-top:2px}.nav{display:flex;gap:7px;overflow:auto;margin-bottom:12px}.nav button{white-space:nowrap}.panel{padding:17px;margin-bottom:12px}.hero{display:grid;grid-template-columns:1fr 180px;gap:15px;align-items:center}.playercard{background:linear-gradient(145deg,#183558,#0c1728);border:1px solid #3b5c82;border-radius:18px;padding:18px;text-align:center}.face{font-size:70px}.rating{font-size:42px;font-weight:900}.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}.choice{padding:14px}.choice p{color:var(--m);line-height:1.45}.btns{display:flex;gap:7px;flex-wrap:wrap}button{border:0;border-radius:10px;padding:10px 13px;background:var(--a);color:#fff;font-weight:800;cursor:pointer}button.green{background:var(--g)}button.yellow{background:var(--y);color:#18202a}button.red{background:var(--r)}button.dark{background:#263b57}.bar{height:8px;background:#263a54;border-radius:99px;overflow:hidden;margin:6px 0 10px}.fill{height:100%;background:linear-gradient(90deg,#36a0ff,#8a67ff)}.chip{display:inline-block;background:#203754;border-radius:99px;padding:4px 8px;font-size:12px;margin:2px}.news{padding:10px;margin:6px 0}.table{width:100%;border-collapse:collapse}.table td,.table th{padding:9px;border-bottom:1px solid #223752;text-align:left}.modalbg{position:fixed;inset:0;background:#000b;display:none;align-items:center;justify-content:center;padding:18px;z-index:10}.modal{max-width:650px;width:100%;background:#0f1c30;border:1px solid #3a5b7d;border-radius:20px;padding:20px;max-height:90vh;overflow:auto}.toast{position:fixed;right:15px;bottom:15px;background:#172b47;border:1px solid #3a5b7d;padding:12px 15px;border-radius:12px;display:none}@media(max-width:800px){.stats{grid-template-columns:repeat(3,1fr)}.hero{grid-template-columns:1fr}.grid{grid-template-columns:1fr}}@media(max-width:500px){.stats{grid-template-columns:repeat(2,1fr)}}
+</style></head>
+<body>
+<div class="wrap">
+<header class="top"><div class="brand"><div class="ball">⚽</div><div><h1>Meine Fußballkarriere</h1><div class="muted">Die Karriere-Simulation</div></div></div><button class="red" onclick="newGame()">Neue Karriere</button></header>
+<div id="stats" class="stats"></div>
+<nav class="nav" id="nav"></nav>
+<main id="main"></main>
+<div class="panel"><h3>📰 Karriere-News</h3><div id="feed"></div></div>
+<div class="muted" style="text-align:center">Spielversion 1.0 · fiktive Vereine · lokaler Spielstand</div>
+</div>
+<div id="modalbg" class="modalbg"><div id="modal" class="modal"></div></div><div id="toast" class="toast"></div>
+<script>
+const clubs=[
+["SV Graz 09",1,61,"Graz"],["FC Linz",2,67,"Linz"],["SK Wien",3,73,"Wien"],["Borussia Rhein",4,79,"Düsseldorf"],["FC München Nord",5,84,"München"],["London Athletic",6,88,"London"],["Madrid Unión",7,91,"Madrid"]
+].map(x=>({name:x[0],level:x[1],base:x[2],city:x[3]}));
+const base={name:"Max Mustermann",age:17,week:1,season:1,club:"SV Graz 09",pos:"ZM",rating:61,potential:88,form:74,fitness:88,energy:84,morale:78,fame:3,money:2500,salary:0,contract:0,relationship:58,education:70,housing:"Elternhaus",car:"Kein Auto",invest:0,goals:0,assists:0,injuries:0,training:0,offers:[],events:[],achievements:[],gameOver:false};
+let s=load()||structuredClone(base),tab="home";
+const $=id=>document.getElementById(id);
+const euro=n=>new Intl.NumberFormat("de-DE",{style:"currency",currency:"EUR",maximumFractionDigits:0}).format(Math.round(n));
+const clamp=(n,a=0,b=100)=>Math.max(a,Math.min(b,n));
+function save(){localStorage.setItem("mfk_game",JSON.stringify(s))}
+function log(x){s.events.unshift(`S${s.season} W${s.week}: ${x}`);s.events=s.events.slice(0,50)}
+function toast(x){$("toast").textContent=x;$("toast").style.display="block";setTimeout(()=>$("toast").style.display="none",2200)}
+function setTab(x){tab=x;render()}
+function newGame(){if(confirm("Neue Karriere starten?")){localStorage.removeItem("mfk_game");s=structuredClone(base);log("Deine Karriere beginnt.");render()}}
+function club(){return clubs.find(x=>x.name===s.club)||clubs[0]}
+function render(){
+$("stats").innerHTML=[["Verein",s.club],["Alter",s.age],["Stärke",s.rating],["Form",s.form+"%"],["Fitness",s.fitness+"%"],["Vermögen",euro(s.money)]].map(x=>`<div class="stat"><span class="muted">${x[0]}</span><b>${x[1]}</b></div>`).join("");
+$("nav").innerHTML=["home|🏠 Übersicht","career|🏟️ Karriere","market|🔄 Transfers","life|🏠 Leben","money|💰 Geld","profile|👤 Profil"].map(x=>{let[a,b]=x.split("|");return `<button class="${tab===a?"":"dark"}" onclick="setTab('${a}')">${b}</button>`}).join("");
+if(s.gameOver)return end();
+({home,career,market,life,money,profile}[tab])();
+$("feed").innerHTML=s.events.slice(0,8).map(x=>`<div class="news">${x}</div>`).join("")||"<div class='muted'>Noch keine Nachrichten.</div>";save()
+}
+function home(){
+$("main").innerHTML=`<section class="panel hero"><div><div class="muted">SAISON ${s.season} · WOCHE ${s.week}</div><h2>${s.club}</h2><p>Du bist ${s.age} Jahre alt. Dein Weg zum Profi beginnt mit deiner nächsten Entscheidung.</p><span class="chip">${s.pos}</span><span class="chip">Potenzial ${s.potential}</span><span class="chip">Gehalt ${euro(s.salary)}/Monat</span></div><div class="playercard"><div class="face">🧑‍⚽</div><div class="rating">${s.rating}</div><div class="muted">GESAMTSTÄRKE</div></div></section>
+<section class="grid"><div class="panel"><h2>🎮 Spielwoche</h2><p class="muted">Wähle eine Hauptaktion. Danach schreitet die Karriere eine Woche voran.</p><div class="btns"><button onclick="train()">🏋️ Trainieren</button><button class="dark" onclick="rest()">😴 Regenerieren</button><button class="green" onclick="match()">⚽ Spiel spielen</button></div></div>
+<div class="panel"><h2>💬 Entscheidung</h2><p>Dein Berater, Trainer oder dein Privatleben stellt dich vor eine Wahl.</p><button class="yellow" onclick="decision()">Entscheidung öffnen</button></div></section>`}
+function career(){
+$("main").innerHTML=`<section class="panel"><h2>🏟️ Deine Entwicklung</h2><div class="grid">
+<div class="choice"><h3>Stärke ${s.rating}/${s.potential}</h3><div class="bar"><div class="fill" style="width:${s.rating/s.potential*100}%"></div></div><small>Trainingseinheiten: ${s.training}</small></div>
+<div class="choice"><h3>Form ${s.form}%</h3><div class="bar"><div class="fill" style="width:${s.form}%"></div></div><small>Fitness ${s.fitness}% · Energie ${s.energy}%</small></div></div>
+<div class="choice"><h3>🎯 Saisonstatistik</h3><table class="table"><tr><th>Wert</th><th>Karriere</th></tr><tr><td>Tore</td><td>${s.goals}</td></tr><tr><td>Assists</td><td>${s.assists}</td></tr><tr><td>Verletzungen</td><td>${s.injuries}</td></tr><tr><td>Bekanntheit</td><td>${s.fame}</td></tr></table></div></section>`}
+function market(){
+let offers=s.offers.map((o,i)=>`<div class="choice"><div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap"><div><h3>${o.club}</h3><p>${euro(o.salary)}/Monat · ${o.years} Jahre<br>Rolle: ${o.role} · Bonus: ${euro(o.bonus)}</p></div><div class="btns"><button class="green" onclick="accept(${i})">Wechseln</button><button class="dark" onclick="reject(${i})">Ablehnen</button></div></div></div>`).join("");
+$("main").innerHTML=`<section class="panel"><h2>🔄 Transfermarkt</h2><p class="muted">Ein Angebot anzunehmen verändert Geld, Spielzeit, Bekanntheit und deine Entwicklung.</p>${offers||"<div class='choice'>Keine Angebote. Gute Spiele erhöhen deine Chancen.</div>"}</section>
+<section class="panel"><h2>🌍 Vereine</h2><div class="grid">${clubs.map(c=>`<div class="choice"><b>${c.name}</b><p>${c.city} · Level ${c.level} · Kaderniveau ${c.base}</p></div>`).join("")}</div></section>`}
+function life(){
+$("main").innerHTML=`<section class="panel"><h2>🏠 Dein Leben außerhalb des Platzes</h2><div class="grid">
+<div class="choice"><h3>❤️ Familie & Beziehungen</h3><div class="bar"><div class="fill" style="width:${s.relationship}%"></div></div><p>${s.relationship}%</p><button onclick="family()">Zeit investieren</button></div>
+<div class="choice"><h3>📚 Bildung</h3><div class="bar"><div class="fill" style="width:${s.education}%"></div></div><p>${s.education}%</p><button onclick="edu()">Weiterbilden</button></div>
+<div class="choice"><h3>🏠 ${s.housing}</h3><button onclick="buy('flat')">Wohnung ${euro(30000)}</button><button class="dark" onclick="buy('house')">Haus ${euro(180000)}</button></div>
+<div class="choice"><h3>🚗 ${s.car}</h3><button onclick="buy('sport')">Sportwagen ${euro(80000)}</button><button class="dark" onclick="buy('lux')">Luxuswagen ${euro(180000)}</button></div></div></section>`}
+function money(){
+$("main").innerHTML=`<section class="panel"><h2>💰 Dein Finanzleben</h2><div class="grid"><div class="choice"><h3>Vermögen</h3><div style="font-size:30px;font-weight:900">${euro(s.money)}</div></div><div class="choice"><h3>Monatsgehalt</h3><div style="font-size:30px;font-weight:900">${euro(s.salary)}</div></div><div class="choice"><h3>Investments</h3><p>${euro(s.invest)}</p><button class="green" onclick="invest()">50.000 € investieren</button></div><div class="choice"><h3>Vertrag</h3><p>${s.contract>0?s.contract+" Wochen":"kein laufender Vertrag"}</p></div></div></section>`}
+function profile(){
+$("main").innerHTML=`<section class="panel"><h2>👤 Spielerprofil</h2><div class="grid"><div class="choice"><h3>${s.name}</h3><p>Alter: ${s.age}<br>Position: ${s.pos}<br>Verein: ${s.club}</p></div><div class="choice"><h3>Mental</h3><p>Moral ${s.morale}% · Energie ${s.energy}% · Bekanntheit ${s.fame}</p></div><div class="choice"><h3>Privat</h3><p>${s.housing}<br>${s.car}</p></div><div class="choice"><h3>🏆 Erfolge</h3><p>${s.achievements.length?s.achievements.join("<br>"):"Noch keine."}</p></div></div></section>`}
+function train(){s.rating=clamp(s.rating+(Math.random()<.7?1:2),1,s.potential);s.training++;s.fitness-=10;s.energy-=15;s.form=clamp(s.form+3);log("Training: Deine Entwicklung macht einen Schritt nach vorne.");advance();render()}
+function rest(){s.fitness=clamp(s.fitness+16);s.energy=clamp(s.energy+20);s.form=clamp(s.form-1);log("Du regenerierst und bist wieder frisch.");advance();render()}
+function match(){
+let p=s.rating+s.form*.55+s.fitness*.28+s.morale*.18+Math.random()*25-10;
+if(s.fitness<28&&Math.random()<.2){s.injuries++;s.fitness=20;log("🚑 Verletzung im Spiel. Du musst pausieren.");}
+else{let great=p>148,good=p>122;
+if(great){s.goals+=Math.random()<.55?1:0;s.assists+=Math.random()<.55?1:0;s.fame+=4;s.form=clamp(s.form+9);s.morale=clamp(s.morale+5);log("⭐ Überragendes Spiel! Scouts sprechen über dich.");if(Math.random()<.7)offer()}
+else if(good){s.goals+=Math.random()<.2?1:0;s.assists+=Math.random()<.35?1:0;s.fame+=2;s.form=clamp(s.form+5);s.morale=clamp(s.morale+2);log("👍 Gute Leistung.");}
+else{s.form=clamp(s.form-7);s.morale=clamp(s.morale-4);log("😕 Schwieriger Spieltag.");}s.fitness-=12}
+advance();render()}
+function offer(){let cur=club().level,pool=clubs.filter(c=>c.level>cur&&c.level<=cur+2),c=pool[Math.floor(Math.random()*pool.length)]||clubs[Math.min(cur,clubs.length-1)];let sal=Math.round((2800+c.level*c.level*2500)*(0.85+Math.random()*.4));s.offers.push({club:c.name,salary:sal,years:2+Math.floor(Math.random()*3),role:s.rating>=c.base-3?"Stammspieler":"Rotation",bonus:Math.round(sal*.8)});log("📨 "+c.name+" macht dir ein Vertragsangebot.")}
+function accept(i){let o=s.offers[i];s.club=o.club;s.salary=o.salary;s.contract=o.years*52;s.money+=o.bonus;s.rating=clamp(s.rating+1,1,s.potential);s.fame+=4;s.offers=[];log("✈️ Transfer zu "+o.club+" unterschrieben. Bonus "+euro(o.bonus));advance();setTab("home")}
+function reject(i){let o=s.offers.splice(i,1)[0];log("Du lehnst "+o.club+" ab.");render()}
+function decision(){
+let opts=[
+["💰 Geld","Du willst das Maximum aus deinem nächsten Vertrag holen.",()=>{s.fame+=2;offer();log("Dein Berater fordert mehr Geld.")}],
+["🏟️ Spielzeit","Du stellst Entwicklung über Gehalt.",()=>{s.rating=clamp(s.rating+1,1,s.potential);s.form=clamp(s.form+5);log("Du priorisierst Spielzeit.")}],
+["❤️ Familie","Du schützt dein Privatleben.",()=>{s.relationship=clamp(s.relationship+10);s.energy=clamp(s.energy+8);log("Du nimmst dir bewusst Zeit für Familie.")}],
+["🤝 Loyalität","Du bleibst deinem Verein treu.",()=>{s.morale=clamp(s.morale+6);log("Deine Loyalität kommt bei den Fans gut an.")}]
+];
+$("modal").innerHTML=`<h2>💬 Große Karriereentscheidung</h2><p>Dein Berater fragt: Was ist dir momentan am wichtigsten?</p>`+opts.map((o,i)=>`<div class="choice"><h3>${o[0]}</h3><p>${o[1]}</p><button onclick="choose(${i})">Entscheiden</button></div>`).join("");$("modalbg").style.display="flex";window.opts=opts}
+function choose(i){window.opts[i][2]();close();advance();render()}
+function close(){$("modalbg").style.display="none"}
+function family(){s.relationship=clamp(s.relationship+10);s.energy=clamp(s.energy+5);log("Familie steht heute an erster Stelle.");advance();render()}
+function edu(){s.education=clamp(s.education+8);s.energy-=5;log("Du investierst in deine Ausbildung.");advance();render()}
+function buy(x){let cost=x==="flat"?30000:x==="house"?180000:x==="sport"?80000:180000;if(s.money<cost){toast("Nicht genug Geld.");return}s.money-=cost;if(x==="flat")s.housing="Eigene Wohnung";if(x==="house")s.housing="Eigenes Haus";if(x==="sport")s.car="Sportwagen";if(x==="lux")s.car="Luxuswagen";log("Du kaufst "+({flat:"eine eigene Wohnung",house:"ein eigenes Haus",sport:"einen Sportwagen",lux:"einen Luxuswagen"}[x])+".");render()}
+function invest(){if(s.money<50000){toast("Du brauchst 50.000 €.");return}s.money-=50000;s.invest+=50000;log("💼 Du investierst 50.000 €.");render()}
+function advance(){
+s.week++;s.fitness=clamp(s.fitness);s.energy=clamp(s.energy);s.morale=clamp(s.morale);s.relationship=clamp(s.relationship);
+if(s.contract>0)s.contract--;
+if(s.week>52){s.week=1;s.season++;s.age++;if(s.rating<s.potential)s.rating++;if(s.salary)s.money+=s.salary*12;log("🏆 Saison beendet. Du wirst ein Jahr älter.");if(s.age>=25&&!s.achievements.includes("Profi etabliert"))s.achievements.push("Profi etabliert")}
+else if(s.week%4===0&&s.salary)s.money+=s.salary;
+if(s.age>=35){s.gameOver=true;log("🏁 Deine aktive Profikarriere endet.");}
+}
+function end(){ $("main").innerHTML=`<section class="panel"><div class="playercard"><div class="face">🏆</div><h2>Karriere beendet</h2><p>Du hast deine aktive Karriere abgeschlossen.</p><p style="font-size:22px">Vermögen: <b>${euro(s.money)}</b></p><p>Tore: ${s.goals} · Assists: ${s.assists} · Bekanntheit: ${s.fame}</p><button onclick="newGame()">Neue Karriere</button></div></section>`}
+function load(){try{return JSON.parse(localStorage.getItem("mfk_game"))}catch(e){return null}}
+if(!s.events.length)log("Willkommen. Dein erstes Ziel: einen Profivertrag bekommen.");
+render();
+</script></body></html>
